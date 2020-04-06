@@ -1,0 +1,22 @@
+{
+  "firstProp":"777@Integer",
+  "secondProp":"str@String",
+  "thirdProp":"true@Boolean",
+  "forthProp?":"optionalStr@String",
+  "fifthProp":{
+    "insideObjFirst":"77@Integer[1,100]",
+    "insideObjSecond":[
+      "array1@String[1,10]",
+      "ListValidation"
+    ],
+    "insideObjThird":[
+      "array1@String[1,10]",
+      "TupleValidation@String"
+    ],
+    "insideObjForth":[
+      {
+        "objInsideArray?":  "simple@String"
+      }
+    ]
+  }
+}
