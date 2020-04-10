@@ -20,25 +20,13 @@ CHAR                        {UNESCAPEDCHAR}|{ESCAPEDCHAR}|{UNICODECHAR}
 CHARS                       {CHAR}+
 MODIFIED_VALUE_CHAR         {UNESCAPED_CHAR_WITHOUT_AT}|{ESCAPEDCHAR}|{UNICODECHAR}
 MODIFIED_KEY_CHAR           {UNESCAPED_CHAR_WITHOUT_QM}|{ESCAPEDCHAR}|{UNICODECHAR}
+MODIFIED_BOTH_CHAR          {UNESCAPED_CHAR_WITHOUT_BOTH}|{ESCAPEDCHAR}|{UNICODECHAR}
 DBL_QUOTE                   ["]
 
 
 %%
-{DBL_QUOTE}{MODIFIED_KEY_CHARS}{KEY_ANNOTATION_SYMBOL}{DBL_QUOTE}      return 'ANNOTATED_KEY_STRING'
-{VALUE_ANNOTATION_SYMBOL}{MODIFIED_VALUE_CHAR}{CHARS}|{VALUE_ANNOTATION_SYMBOL}{MODIFIED_VALUE_CHAR}    return 'OSON_ANNOTATION'
-{MODIFIED_VALUE_CHAR}                              return 'MODIFIED_VALUE_CHAR'
-{MODIFIED_KEY_CHAR}                              return 'MODIFIED_KEY_CHAR'
-"true"                                                return 'TRUE'
-"false"                                            return 'FALSE'
-"null"                                            return 'NULL'
-"Integer"                                         return 'INTEGER_TYPE'
-"Number"                                         return 'NUMBER_TYPE'
-"Boolean"                                         return 'BOOLEAN_TYPE'
-"Null"                                         return 'NULL_TYPE'
-"Any"                                         return 'ANY_TYPE'
-"String"                                         return 'STRING_TYPE'
-"Integer"                                         return 'INTEGER_TYPE'
-"JSON"                                         return 'JSON_TYPE'
+{VALUE_ANNOTATION_SYMBOL}                          return '@';
+{KEY_ANNOTATION_SYMBOL}                          return '?';
 {VALUE_ANNOTATION_SYMBOL}{VALUE_ANNOTATION_SYMBOL}    return '@@'
 {KEY_ANNOTATION_SYMBOL}{KEY_ANNOTATION_SYMBOL}        return '??'
 "{"                                            return '{'
@@ -47,14 +35,16 @@ DBL_QUOTE                   ["]
 "]"                                            return ']'
 ","                                            return ','
 ":"                                            return ':'
+{MODIFIED_BOTH_CHAR}                             return 'MODIFIED_BOTH_CHAR';
 {DBL_QUOTE}                                    return 'DBL_QUOTE'
 \/(?:[^\/]|"\\/")*\/                           return 'REGEX'
 [ \t\n]+                                    /* ignore whitespace */
 /*.                                               return 'INVALID'*/
 /lex
 
-%token ANNOTATED_KEY_STRING OSON_ANNOTATION
 %token DBL_QUOTE
+%token @ ? { } [ ] , :
+%token MODIFIED_BOTH_CHAR
 %token MODIFIED_CHAR
 %token TRUE FALSE NULL
 %left O_BEGIN O_END A_BEGIN A_END
@@ -86,38 +76,70 @@ osonValue
 osonObject
     :'{' '}'
         {
-            $$ = new yy.Node("object",undefined,[]);
+            $$ = "osonObject:{EMPTY}";
         }
     |'{' osonMembers '}'
         {
-            $$ = new yy.Node("object",undefined,$2);
+            $$ = $2;
         }
     ;
 osonArray
     :'[' ']'
         {
-            $$ = new yy.Node("array",undefined,[]);
+            $$ = `ARRAY:[EMPTY]`;
         }
     |'[' osonElements ']'
         {
-            $$ = new yy.Node("array",undefined,$2);
+            $$ = $2;
         }
     ;
 annotatedValue
-    :DBL_QUOTE modifiedValueChars OSON_ANNOTATION DBL_QUOTE
+    :DBL_QUOTE closePart
         {
-            // @@ to @
-            $$ = {
-                     //return "" if no example
-                     jsonExample: yy.Node.getOriValue($2),
-                     osonAnnotation: $3
-                 }
+            $$ = $2;
         }
-    |modifiedValueString
+    ;
+closePart
+    :'@' '@' closePart
         {
-            // todo: must: @@ to @ !!!
-            $$ =$1
+            $$ = yy.Node.handleClosePart("example",$1,$3);
         }
+    |'@' osonAnnotation DBL_QUOTE
+        {
+            $$ = yy.Node.handleClosePart("annotation","@"+$2);
+        }
+    |singleModifiedValueChar closePart
+        {
+            $$ = yy.Node.handleClosePart("example",$1,$2);
+        }
+    |DBL_QUOTE
+        {
+            $$ = '';
+        }
+    ;
+singleModifiedValueChar
+    :MODIFIED_BOTH_CHAR
+    {$$ = $1;}
+    |'?'
+    {$$ = $1;}
+    ;
+osonAnnotation
+    :singleModifiedValueChar normalChars
+        {$$ = $1+$2;}
+    ;
+normalChars
+    :normalChar normalChars
+        {$$ = $1+$2;}
+    |
+        {$$ = '';}
+    ;
+normalChar
+    :MODIFIED_BOTH_CHAR
+    {$$ = $1;}
+    |'@'
+    {$$ = $1;}
+    |'?'
+    {$$ = $1;}
     ;
 osonMembers
     :osonMember ',' osonMembers
@@ -127,65 +149,46 @@ osonMembers
     ;
 osonElements
     :osonValue ',' osonElements
-    {$$ = $3; $$.unshift($1);}
+        {$$ = $3; $$.unshift($1);}
     |osonValue
-    {$$ = [$1];}
-    ;
-modifiedValueString
-    : DBL_QUOTE DBL_QUOTE
-    {$$='';}
-    | DBL_QUOTE modifiedValueChars DBL_QUOTE
-    {$$=`${$2}`;}
+        {$$ = [$1];}
     ;
 osonMember
     :annotatedKey ':' osonValue
-    {
-        //named_entries for object entries[annotatedKey]={propertiesName,optional} [osonValue]=Value(type:...)
-        $$ = {
-            annotatedKey:$1,
-            osonValue:$3
-        };
-    }
-    ;
-modifiedValueChars
-    :singleModifiedValueChar modifiedValueChars
-    {$$=$1+$2;}
-    |
-    {$$='';}
-    ;
-singleModifiedValueChar
-    :MODIFIED_VALUE_CHAR
-    {$$ = $1;}
-    |'@' '@'
-    {$$ = '@';}
+        {
+           $$={key:$1,value:$3};
+        }
     ;
 annotatedKey
-    :modifiedKeyString
+    :DBL_QUOTE closeKey
     {
-        // todo: must: ?? to ? !!!
+        // todo: must: ?? to ? !!! already done in singleModifiedKeyChar
         // don't need to handle "...":"@*", handle it in value part
         // remove '?' and change '??' to '?', use "optional: true" to mark it.
-        $$ = {
-            text: yy.Node.getOriKey($1),
-            optional: true
-        }
+        $$ = $2;
     }
     ;
-modifiedKeyString
-    : DBL_QUOTE DBL_QUOTE
-    {$$='';}
-    | DBL_QUOTE modifiedKeyChars DBL_QUOTE
-    {$$=`${$2}`;}
-    ;
-modifiedKeyChars
-    :singleModifiedKeyChar modifiedKeyChars
-    {$$=$1+$2;}
-    |
-    {$$='';}
+closeKey
+    :DBL_QUOTE
+        {
+            $$ = '';
+        }
+    |singleModifiedKeyChar closeKey
+        {
+            $$ = yy.Node.handleCloseKey("key",$1,$2);
+        }
+    |'?' '?' closeKey
+        {
+            $$ = yy.Node.handleCloseKey("key",$1,$3);
+        }
+    |'?' DBL_QUOTE
+        {
+            $$ = yy.Node.handleCloseKey("optional",true);
+        }
     ;
 singleModifiedKeyChar
-    :MODIFIED_KEY_CHAR
-    {$$ = $1;}
-    |'?' '?'
-    {$$ = '?';}
+    :MODIFIED_BOTH_CHAR
+        {$$ = $1;}
+    |'@'
+        {$$ = $1;}
     ;

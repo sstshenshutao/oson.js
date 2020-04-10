@@ -10,7 +10,8 @@
       "ListValidation"
     ],
     "insideObjThird":[
-      "array1@String[1,10]",
+      ["arrayEle1","arrayEle2"],
+      ["arrayEle1"],
       "TupleValidation@String"
     ],
     "insideObjForth":[

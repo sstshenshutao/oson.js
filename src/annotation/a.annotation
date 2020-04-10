@@ -1,0 +1,23 @@
+  @Integer
+  @String
+  @Boolean
+  @(Boolean)|(Integer[3,5])
+  @(String[2,4])|(Integer[3,5])
+  @(String[2,4]{'aa','bb'})|(Integer[3,5]{4,5})
+  @Number
+  @Integer[1,100]
+  @Number[1,10]
+  @String[1,10]
+  @String{'hi','hello'}
+  @Null
+  @Any
+  @*
+  @*(Integer)
+  @String[1,10]/^http/
+  @JSON
+  @String[1,10]='hello'
+  @String[1,10]/^[hmnis]/{'hello','my','name','is','shen'}='hello'
+  @Number[1,10]{1,2,3,4,5}=4
+  @(String[1,10]/^[hmnis]/{'hello','my','name','is','shen'}='hello')|(Number[1,10]{1,2,3,4,5}=4)
+
+

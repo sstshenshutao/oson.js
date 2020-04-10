@@ -86,50 +86,52 @@ osonValue
 osonObject
     :'{' '}'
         {
-            $$ = new yy.Node("object",undefined,[]);
+            $$ = "osonObject:{EMPTY}";
         }
     |'{' osonMembers '}'
         {
-            $$ = new yy.Node("object",undefined,$2);
+            $$ = `osonObject: {${$2}}`;
         }
     ;
 osonArray
     :'[' ']'
         {
-            $$ = new yy.Node("array",undefined,[]);
+            $$ = `ARRAY:[EMPTY]`;
         }
     |'[' osonElements ']'
         {
-            $$ = new yy.Node("array",undefined,$2);
+            $$ = `ARRAY:[$2]`;
         }
     ;
 annotatedValue
-    :DBL_QUOTE modifiedValueChars OSON_ANNOTATION DBL_QUOTE
+    :DBL_QUOTE closeValue
         {
-            // @@ to @
-            $$ = {
-                     //return "" if no example
-                     jsonExample: yy.Node.getOriValue($2),
-                     osonAnnotation: $3
-                 }
+            $$ = `${$1}`;
         }
-    |modifiedValueString
-        {
-            // todo: must: @@ to @ !!!
-            $$ =$1
-        }
+    ;
+closeValue
+    :DBL_QUOTE
+        {$$ = `"`;}
+    |modifiedValueChars closeLast
+        {$$ = `modifiedValueChars: ${$1}, closeLast: ${$2}`;}
+    ;
+closeLast
+    :OSON_ANNOTATION DBL_QUOTE
+        {$$ = `OSON_ANNOTATION: ${$1}, and "`; }
+    |DBL_QUOTE
+        {$$ = `"`;}
     ;
 osonMembers
     :osonMember ',' osonMembers
-    {$$ = $3; $$.unshift($1);}
+    {$$ = `${$1} , ${$3}`;}
     |osonMember
-    {$$ = [$1];}
+    {$$ = $1;}
     ;
 osonElements
     :osonValue ',' osonElements
-    {$$ = $3; $$.unshift($1);}
+        {$$ = `${$1} , ${$3}`;}
     |osonValue
-    {$$ = [$1];}
+        {$$ = $1;}
     ;
 modifiedValueString
     : DBL_QUOTE DBL_QUOTE
@@ -139,19 +141,13 @@ modifiedValueString
     ;
 osonMember
     :annotatedKey ':' osonValue
-    {
-        //named_entries for object entries[annotatedKey]={propertiesName,optional} [osonValue]=Value(type:...)
-        $$ = {
-            annotatedKey:$1,
-            osonValue:$3
-        };
-    }
+        {
+           $$=$1+":"+$3;
+        }
     ;
 modifiedValueChars
     :singleModifiedValueChar modifiedValueChars
-    {$$=$1+$2;}
-    |
-    {$$='';}
+        {$$=$1+$2;}
     ;
 singleModifiedValueChar
     :MODIFIED_VALUE_CHAR
@@ -162,30 +158,29 @@ singleModifiedValueChar
 annotatedKey
     :modifiedKeyString
     {
-        // todo: must: ?? to ? !!!
+        // todo: must: ?? to ? !!! already done in singleModifiedKeyChar
         // don't need to handle "...":"@*", handle it in value part
         // remove '?' and change '??' to '?', use "optional: true" to mark it.
-        $$ = {
-            text: yy.Node.getOriKey($1),
-            optional: true
-        }
+        $$ = $1;
     }
     ;
 modifiedKeyString
-    : DBL_QUOTE DBL_QUOTE
-    {$$='';}
-    | DBL_QUOTE modifiedKeyChars DBL_QUOTE
-    {$$=`${$2}`;}
+    : DBL_QUOTE closeKey
+        {$$=`" closeKey: ${$2}`;}
+    ;
+closeKey
+    :DBL_QUOTE
+        {$$=`"`;}
+    | modifiedKeyChars DBL_QUOTE
+        {$$=`modifiedKeyChars: ${$1}, "`;}
     ;
 modifiedKeyChars
     :singleModifiedKeyChar modifiedKeyChars
-    {$$=$1+$2;}
-    |
-    {$$='';}
+        {$$=$1+$2;}
     ;
 singleModifiedKeyChar
     :MODIFIED_KEY_CHAR
-    {$$ = $1;}
+        {$$ = $1;}
     |'?' '?'
-    {$$ = '?';}
+        {$$ = '?';}
     ;
