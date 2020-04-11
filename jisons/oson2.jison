@@ -122,7 +122,7 @@ annotatedValue
     :DBL_QUOTE closePart
         {
         //return something like:{
-        //      "example": "777",
+        //      "examples": "777",
         //      "osonAnnotation": "@Integer"
         //}
             $$ = $2;
@@ -131,7 +131,7 @@ annotatedValue
 closePart
     :'@' '@' closePart
         {
-            $$ = yy.Node.handleClosePart("example",$1,$3);
+            $$ = yy.Node.handleClosePart("examples",$1,$3);
         }
     |'@' osonAnnotation DBL_QUOTE
         {
@@ -139,7 +139,7 @@ closePart
         }
     |singleModifiedValueChar closePart
         {
-            $$ = yy.Node.handleClosePart("example",$1,$2);
+            $$ = yy.Node.handleClosePart("examples",$1,$2);
         }
     |DBL_QUOTE
         {

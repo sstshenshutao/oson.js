@@ -1,7 +1,7 @@
 let jison = require("jison");
 let fs = require("fs");
 let path = require('path');
-let jisonFile = path.resolve(__dirname, 'oson2.jison');
+let jisonFile = path.resolve(__dirname, '../jisons/oson2.jison');
 let bnf = fs.readFileSync(jisonFile, "utf8");
 let parser = new jison.Parser(bnf);
 bindScope(parser, "Node", require('./scope'));
@@ -9,7 +9,7 @@ bindScope(parser, "Node", require('./scope'));
 function bindScope(parser, scopeName, scope) {
     let yy = parser.yy;
     if (yy[scopeName]) {
-        console.log(`${scopeName} exists`)
+        console.log(`${scopeName} exists`);
     } else {
         yy[scopeName] = scope
     }
@@ -26,5 +26,4 @@ function printRun(filename) {
 
 
 //test
-
-printRun('a.json')
+printRun('../testJson/a.json');

@@ -20,6 +20,6 @@
   },
   "homepage": "https://github.com/sstshenshutao/oson.js#readme",
   "dependencies": {
-    "jison": "^0.4.18"
+    "oson.annotation.js.test": "^1.0.2"
   }
 }
