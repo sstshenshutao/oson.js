@@ -1,6 +1,6 @@
 {
   "name": "oson.js",
-  "version": "1.0.0",
+  "version": "0.9.0",
   "description": "A CommonJS module that compiles OSON to JSONSchema",
   "main": "index.js",
   "scripts": {

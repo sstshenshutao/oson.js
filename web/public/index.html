@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <title>oson.js</title>
+    <script type="application/javascript" src="./js/bundle-index.js"></script>
+</head>
+<body>
+<h1>oson to JSON Schema Compiler</h1>
+<textarea id="osonAnnotation" rows="30" cols="80">
+{
+  "firstProp":"777@Integer",
+  "secondProp":"str@String",
+  "thirdProp":"true@Boolean",
+  "forthProp?":"optionalStr@String",
+  "fifthProp":{
+    "insideObjFirst":"77@Integer[1,100]",
+    "insideObjSecond":[
+      "array1@String[1,10]",
+      "ListValidation"
+    ],
+    "insideObjThird":[
+      ["arrayEle1","arrayEle2"],
+      ["arrayEle1"],
+      "TupleValidation@String"
+    ],
+    "insideObjForth":[
+      {
+        "objInsideArray?":  "simple@String"
+      }
+    ]
+  }
+}
+  </textarea>
+<textarea id="jsonschema" rows="30" cols="80">
+    please press "convert" button
+</textarea>
+<p>
+    <button id="button">convert</button>
+</p>
+<p><a href="https://github.com/sstshenshutao/oson.annotation.js">project</a></p>
+</body>
+</html>
